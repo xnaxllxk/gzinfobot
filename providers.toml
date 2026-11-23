@@ -1,0 +1,14 @@
+# Пользовательский каталог freellmpool: добавляет провайдера OrcaRouter (бесплатный DeepSeek V4 Flash).
+# Установка: sudo install -D -m 644 providers.toml /etc/freellmpool/providers.toml
+# Ключ: ORCAROUTER_API_KEY в /etc/freellmpool.env (регистрация на orcarouter.ai).
+# rpd = 0 — локального дневного лимита нет: шлюз опирается на реальные ответы 429 от сервиса.
+
+[[provider]]
+id = "orcarouter"
+label = "OrcaRouter (DeepSeek V4 Flash free)"
+adapter = "openai"
+base_url = "https://api.orcarouter.ai/v1"
+key_env = "ORCAROUTER_API_KEY"
+models = [
+    { name = "deepseek/deepseek-v4-flash-free", rpd = 0 },
+]

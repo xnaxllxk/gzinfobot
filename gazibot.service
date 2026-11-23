@@ -1,0 +1,25 @@
+[Unit]
+Description=Gazipasa report Telegram bot
+After=network-online.target freellmpool.service
+Wants=network-online.target freellmpool.service
+
+[Service]
+User=ubuntu
+ExecStart=/home/ubuntu/gazibot/gazibot-arm64
+EnvironmentFile=/etc/gazibot.env
+# Кэш курсов/цен переживает перезапуски: /var/lib/gazibot/cache.json
+StateDirectory=gazibot
+Environment=CACHE_FILE=/var/lib/gazibot/cache.json
+# Настройки, которыми админ управляет из Telegram (время, координаты, ссылки, модули)
+Environment=SETTINGS_FILE=/var/lib/gazibot/settings.json
+Restart=always
+RestartSec=10
+
+# Ограничения для безопасности
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

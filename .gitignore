@@ -1,0 +1,5 @@
+*.env
+settings.json
+cache.json
+gazibot-arm64
+gazibot

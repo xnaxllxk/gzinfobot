@@ -1,0 +1,38 @@
+[Unit]
+Description=freellmpool: локальный шлюз к бесплатным LLM для gazibot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=freellmpool
+Group=freellmpool
+EnvironmentFile=/etc/freellmpool.env
+# Счётчики лимитов и состояние маршрутов живут здесь: /var/lib/freellmpool/.config/freellmpool
+Environment=HOME=/var/lib/freellmpool
+# Свой каталог провайдеров: добавляет OrcaRouter (бесплатный DeepSeek V4 Flash)
+Environment=FREELLMPOOL_CONFIG=/etc/freellmpool/providers.toml
+StateDirectory=freellmpool
+WorkingDirectory=/var/lib/freellmpool
+# Только петля: снаружи шлюз недоступен. Версия закреплена в venv (см. INSTALL.md).
+ExecStart=/opt/freellmpool/venv/bin/freellmpool proxy --host 127.0.0.1 --port 8080
+Restart=always
+RestartSec=10
+
+# Ограничения для безопасности
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+LockPersonality=true
+CapabilityBoundingSet=
+SystemCallFilter=@system-service
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
