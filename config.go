@@ -38,6 +38,7 @@ type config struct {
 	settingsPath string
 	adminUser    int64 // кому разрешено менять настройки (user ID, а не чат: иначе сможет любой участник группы)
 	adminChat    int64 // куда слать уведомления о сбоях
+	adminOnly    bool  // ADMIN_ONLY=1: сообщения не от админа отбрасываются сразу, без обработки
 
 	// Старые переменные окружения: используются только как начальные значения, когда
 	// settings.json ещё не существует. Дальше источник правды — settings.json.
@@ -74,6 +75,7 @@ func loadConfig() (config, error) {
 		aiKey:         env("AI_API_KEY", ""),
 		aiModel:       env("AI_MODEL", defaultAIModel),
 		aiJSON:        env("AI_JSON_MODE", "") == "1",
+		adminOnly:     env("ADMIN_ONLY", "") == "1",
 		cachePath:     env("CACHE_FILE", "cache.json"),
 		seedZiraatURL: env("ZIRAAT_URL", defaultZiraatURL),
 		seedFuelURL:   env("FUEL_URL", defaultFuelURL),

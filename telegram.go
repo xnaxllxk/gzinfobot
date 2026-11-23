@@ -136,7 +136,7 @@ func (a *app) handle(ctx context.Context, u tgUpdate) {
 		text = a.report(ctx)
 	case "/start", "/help":
 		text = helpText
-	case "/admin", "/settings", "/set", "/enable", "/disable", "/test", "/source", "/refresh":
+	case "/admin", "/settings", "/set", "/enable", "/disable", "/test", "/source", "/refresh", "/status":
 		// Только по user ID админа, а не «из админского чата»: иначе любой участник группы
 		// мог бы менять настройки. Остальным бот молчит, как и раньше.
 		if !a.isAdmin(m.From.ID) {
@@ -173,6 +173,9 @@ func (a *app) poll(ctx context.Context) {
 		}
 		for _, u := range updates {
 			offset = u.UpdateID + 1
+			if a.cfg.adminOnly && (u.Message == nil || !a.isAdmin(u.Message.From.ID)) {
+				continue // чужих не обрабатываем вообще: ни горутины, ни ответа
+			}
 			go a.handle(ctx, u)
 		}
 	}

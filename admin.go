@@ -30,6 +30,7 @@ const adminHelp = `🛠 Команды админа
 /enable имя, /disable имя — включить или выключить модуль
 /test имя — прогнать модуль и показать результат, ничего не сохраняя
 /refresh — обновить все данные сейчас
+/status — жив ли ИИ-шлюз и когда обновлялись модули
 
 Свои источники (без правки кода):
 /source — список источников
@@ -64,6 +65,8 @@ func (a *app) admin(ctx context.Context, chat int64, cmd, rest string) string {
 		return adminHelp
 	case "/settings":
 		return a.describe()
+	case "/status":
+		return a.status(ctx)
 	case "/set":
 		return a.cmdSet(ctx, chat, rest)
 	case "/enable":
