@@ -21,6 +21,7 @@ type entry struct {
 type snapshot struct {
 	Entries     map[string]entry `json:"entries,omitempty"`
 	LastAttempt time.Time        `json:"last_attempt"` // последний запуск обновления (чтобы перезапуски не дёргали сайты)
+	LastReport  time.Time        `json:"last_report"`  // время последнего планового отчёта (чтобы перезапуск не слал его дважды)
 
 	// Старый формат кэша (до модульности). При загрузке переносится в Entries.
 	LegacyRates *Rates `json:"rates,omitempty"`
@@ -166,6 +167,19 @@ func (s *store) copyFrom(o *store, key string) {
 	s.snap.Entries[key] = e
 	s.hashes[key] = h
 	delete(s.pending, key)
+	s.saveLocked()
+}
+
+func (s *store) lastReport() time.Time {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.snap.LastReport
+}
+
+func (s *store) markReport(t time.Time) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.snap.LastReport = t
 	s.saveLocked()
 }
 

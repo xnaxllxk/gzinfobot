@@ -11,6 +11,7 @@ import (
 	"math"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -38,6 +39,10 @@ type ModSettings struct {
 type Settings struct {
 	Schedule []string                `json:"schedule"` // времена обновления по Стамбулу, ЧЧ:ММ
 	Modules  map[string]*ModSettings `json:"modules"`
+
+	// Плановая отправка отчёта: времена по Стамбулу (пусто = выключено) и чат (0 = чат админа).
+	ReportTimes []string `json:"report_times,omitempty"`
+	ReportChat  int64    `json:"report_chat,omitempty"`
 	Sources  []*ModSettings          `json:"sources,omitempty"`
 }
 
@@ -85,6 +90,14 @@ func (s *Settings) normalize() error {
 		return err
 	}
 	s.Schedule = formatSlots(slots)
+
+	if len(s.ReportTimes) > 0 {
+		rs, err := parseSlots(strings.Join(s.ReportTimes, ","))
+		if err != nil {
+			return fmt.Errorf("report_times: %w", err)
+		}
+		s.ReportTimes = formatSlots(rs)
+	}
 
 	if s.Modules == nil {
 		s.Modules = map[string]*ModSettings{}
@@ -186,6 +199,26 @@ func (s *Settings) set(key, val string) (string, error) {
 			return "", err
 		}
 		s.Schedule = formatSlots(slots)
+		return "", nil
+	}
+	switch key {
+	case "report_times":
+		if v := strings.ToLower(strings.TrimSpace(val)); v == "off" || v == "выкл" || v == "-" {
+			s.ReportTimes = nil
+			return "", nil
+		}
+		slots, err := parseSlots(val)
+		if err != nil {
+			return "", err
+		}
+		s.ReportTimes = formatSlots(slots)
+		return "", nil
+	case "report_chat":
+		id, err := strconv.ParseInt(strings.TrimSpace(val), 10, 64)
+		if err != nil || id == 0 {
+			return "", fmt.Errorf("report_chat: нужен числовой ID чата или слово here (текущий чат)")
+		}
+		s.ReportChat = id
 		return "", nil
 	}
 	name, fkey, ok := strings.Cut(key, ".")

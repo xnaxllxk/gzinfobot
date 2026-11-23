@@ -30,6 +30,11 @@ const adminHelp = `🛠 Команды админа
 /enable имя, /disable имя — включить или выключить модуль
 /test имя — прогнать модуль и показать результат, ничего не сохраняя
 /refresh — обновить все данные сейчас
+
+Расписание (время Стамбула):
+/set schedule 09:40 — когда обновлять данные; можно несколько: 06:00,12:00,18:00
+/set report_times 10:00 — когда сам присылать отчёт; можно несколько; off — выключить
+/set report_chat here — куда присылать (here = этот чат, либо числовой ID)
 /status — жив ли ИИ-шлюз и когда обновлялись модули
 
 Свои источники (без правки кода):
@@ -97,6 +102,14 @@ func (a *app) describe() string {
 	next := nextSlot(st.slots, time.Now())
 	fmt.Fprintf(&b, "⚙️ Настройки\n\nschedule = %s\n(время Стамбула, ближайшее обновление: %s)\n",
 		strings.Join(st.set.Schedule, ", "), next.In(trt).Format("02.01 15:04"))
+	rt, rc := "выключена", "чат админа"
+	if len(st.set.ReportTimes) > 0 {
+		rt = strings.Join(st.set.ReportTimes, ", ")
+	}
+	if st.set.ReportChat != 0 {
+		rc = strconv.FormatInt(st.set.ReportChat, 10)
+	}
+	fmt.Fprintf(&b, "\nreport_times = %s (автоотправка отчёта, время Стамбула)\nreport_chat = %s\n", rt, rc)
 	for _, m := range st.reg.list {
 		ms := st.set.find(m.Name())
 		if ms == nil {
@@ -207,6 +220,9 @@ func (a *app) cmdSet(ctx context.Context, chat int64, rest string) string {
 		return "Формат: /set ключ значение\nНапример: /set weather.lat 36.27\nВсе ключи: /settings"
 	}
 	key = strings.ToLower(key)
+	if key == "report_chat" && strings.EqualFold(val, "here") {
+		val = strconv.FormatInt(chat, 10)
+	}
 
 	a.setMu.Lock()
 	defer a.setMu.Unlock()
@@ -216,12 +232,24 @@ func (a *app) cmdSet(ctx context.Context, chat int64, rest string) string {
 		return "❌ " + err.Error()
 	}
 	shown := strings.Join(cand.Schedule, ", ")
+	switch key {
+	case "report_times":
+		if shown = strings.Join(cand.ReportTimes, ", "); shown == "" {
+			shown = "выключена"
+		}
+	case "report_chat":
+		shown = strconv.FormatInt(cand.ReportChat, 10)
+	}
 	if mod != "" {
 		_, f, _ := strings.Cut(key, ".")
 		shown = cand.find(mod).Values[f]
 	}
-	return a.commit(ctx, chat, cand, mod, force, fmt.Sprintf("✅ %s = %s", key, shown),
+	res := a.commit(ctx, chat, cand, mod, force, fmt.Sprintf("✅ %s = %s", key, shown),
 		"Если уверены в значении, повторите с флагом: /set -f "+key+" …")
+	if (key == "report_times" || key == "report_chat") && strings.HasPrefix(res, "✅") {
+		a.st.markReport(time.Now()) // новое расписание не должно сразу «догонять» прошедшее время
+	}
+	return res
 }
 
 func (a *app) cmdEnable(ctx context.Context, chat int64, rest string, on bool) string {

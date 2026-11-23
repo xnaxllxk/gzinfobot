@@ -68,6 +68,7 @@ func main() {
 	}
 	go a.scheduler(ctx)
 	go a.watchSettings(ctx)
+	go a.reportScheduler(ctx)
 
 	a.poll(ctx)
 	log.Println("остановлен")
